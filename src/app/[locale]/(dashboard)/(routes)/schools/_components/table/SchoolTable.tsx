@@ -7,7 +7,8 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { PenBoxIcon, Trash2Icon, School as SchoolIcon } from "lucide-react";
+import { PenBoxIcon, Trash2Icon, School as SchoolIcon, Settings2 } from "lucide-react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -93,6 +94,19 @@ function SchoolsTable() {
         header: () => <div className="text-center">{t("actions")}</div>,
         cell: ({ row }) => (
           <div className="flex justify-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-primary hover:text-primary hover:bg-primary/10 transition-all active:scale-90"
+              asChild
+            >
+              <Link
+                href={`/${locale}/school-setup?schoolId=${row.original.id}`}
+                title={t("configureSchool")}
+              >
+                <Settings2 className="size-4" />
+              </Link>
+            </Button>
             <AddSchool isEdit schoolData={row.original}>
               <Button
                 variant="ghost"
@@ -106,21 +120,17 @@ function SchoolsTable() {
             <ShowDialog
               discription={t("areYouSureDelete")}
               onConfirm={async () => {
-                const toastId = toast.loading("Deleting school...", {
+                const toastId = toast.loading(t("deletingSchool"), {
                   position: "top-center",
                 });
                 try {
                   await dispatch(deleteSchool(row.original.id)).unwrap();
-                  toast.success("School deleted successfully", {
+                  toast.success(t("schoolDeleted"), {
                     position: "top-center",
                     id: toastId,
                   });
                 } catch (error: any) {
-                  const msg =
-                    typeof error === "string"
-                      ? error
-                      : error?.message || "Failed to delete school";
-                  toast.error(msg, {
+                  toast.error(t("deleteSchoolFailed"), {
                     position: "top-center",
                     id: toastId,
                   });

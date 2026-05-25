@@ -37,7 +37,7 @@ export default function DashboardLayout({
                 <LanguageSwitcher />
               </div>
             </header>
-            <div className="  flex-1  py-3 px-4">{children}</div>
+            <div className="flex-1 py-4 px-3 sm:px-6">{children}</div>
           </SidebarInset>
         </SidebarProvider>
       </div>

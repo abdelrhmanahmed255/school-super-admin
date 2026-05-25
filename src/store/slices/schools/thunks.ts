@@ -5,9 +5,28 @@ import { RootState } from "@/store";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
 import { logout } from "../userSlice/slice";
-
 import qs from "qs";
 import { toast } from "sonner";
+import { MOCK_SCHOOLS, MOCK_STATS } from "@/lib/mockData";
+
+const USE_MOCK = true;
+
+const getMockSchools = () => {
+  if (typeof window !== "undefined") {
+    const data = localStorage.getItem("mock_schools");
+    if (data) return JSON.parse(data);
+    // Seed with initial mock data on first load
+    localStorage.setItem("mock_schools", JSON.stringify(MOCK_SCHOOLS));
+    return MOCK_SCHOOLS;
+  }
+  return MOCK_SCHOOLS;
+};
+
+const saveMockSchools = (schools: any[]) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("mock_schools", JSON.stringify(schools));
+  }
+};
 
 //function to get all schools from backend
 export const fetchSchools = createAsyncThunk(
@@ -46,6 +65,26 @@ export const fetchSchools = createAsyncThunk(
       }
     });
 
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      let filtered = mockSchools;
+      if (params.search) {
+        filtered = filtered.filter((s: any) => 
+          s.name?.toLowerCase().includes(params.search!.toLowerCase())
+        );
+      }
+      return {
+        data: filtered.slice((page - 1) * pageSize, page * pageSize),
+        pagination: {
+          limit: pageSize,
+          page: page,
+          pages: Math.ceil(filtered.length / pageSize) || 1,
+          total: filtered.length,
+        },
+        append,
+      };
+    }
+
     try {
       const response = await api.get("/schools", {
         params,
@@ -79,6 +118,13 @@ export const fetchSchools = createAsyncThunk(
 export const fetchSchoolById = createAsyncThunk(
   "schools/fetchSchoolById",
   async (id: string | number, { rejectWithValue, dispatch }) => {
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      const school = mockSchools.find((s: any) => String(s.id) === String(id));
+      if (school) return school;
+      return rejectWithValue("School not found");
+    }
+    
     try {
       const response = await api.get(`/schools/${id}`);
       return response.data;
@@ -135,6 +181,17 @@ export const editSchool = createAsyncThunk(
       timezone: prams?.timezone || undefined,
     };
 
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      const index = mockSchools.findIndex((s: any) => String(s.id) === String(prams.id));
+      if (index !== -1) {
+        mockSchools[index] = { ...mockSchools[index], ...params };
+        saveMockSchools(mockSchools);
+        return mockSchools[index];
+      }
+      return rejectWithValue("School not found");
+    }
+
     try {
       const response = await api.patch(`/schools/${prams.id}`, params);
       return response.data.data;
@@ -189,6 +246,19 @@ export const createSchool = createAsyncThunk(
       timezone: prams?.timezone || undefined,
     };
 
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      const newSchool = {
+        ...params,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        status: "active"
+      };
+      mockSchools.push(newSchool);
+      saveMockSchools(mockSchools);
+      return newSchool;
+    }
+
     try {
       const response = await api.post("/schools", params);
       return response.data.data;
@@ -225,6 +295,12 @@ export const createSchool = createAsyncThunk(
 export const deleteSchool = createAsyncThunk(
   "schools/deleteSchool",
   async (Id: string | number, { rejectWithValue, getState, dispatch }) => {
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      saveMockSchools(mockSchools.filter((s: any) => String(s.id) !== String(Id)));
+      return Id;
+    }
+
     try {
       const response = await api.delete(`/schools/${Id}`);
 
@@ -255,6 +331,15 @@ export const deleteSchool = createAsyncThunk(
 export const fetchStatsSchools = createAsyncThunk(
   "schools/fetchStatsSchools",
   async (_, { rejectWithValue, getState, dispatch }) => {
+    if (USE_MOCK) {
+      const mockSchools = getMockSchools();
+      return {
+        ...MOCK_STATS,
+        total_schools: mockSchools.length,
+        active_subscriptions: mockSchools.filter((s: any) => s.status === "active").length,
+      };
+    }
+
     try {
       const response = await api.get("/schools/dashboard/stats");
 

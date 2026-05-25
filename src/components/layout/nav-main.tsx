@@ -38,6 +38,32 @@ export function NavMain() {
     <SidebarGroup>
       <SidebarMenu>
         {sideBarRoutes.map((item) => {
+          // Single top-level link (no children)
+          if (!item.items || item.items.length === 0) {
+            const isActive = isLocaleRouteActive(pathname, locale, item.url);
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild={!isActive}
+                  tooltip={t(item.title)}
+                  className={`h-10 text-base hover:bg-primary/10 transition-all hover:scale-105 hover:text-primary ${isActive ? "bg-linear-to-l to-primary from-primary/80 text-white hover:text-white" : ""}`}
+                >
+                  {isActive ? (
+                    <>
+                      {item.icon && <item.icon />}
+                      <span>{t(item.title)}</span>
+                    </>
+                  ) : (
+                    <Link href={localePath(locale, item.url)}>
+                      {item.icon && <item.icon />}
+                      <span>{t(item.title)}</span>
+                    </Link>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
+
           const isGroupActive = item.items?.some((subItem) =>
             isLocaleRouteActive(pathname, locale, subItem.url),
           );
